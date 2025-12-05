@@ -5,6 +5,15 @@ A modern, interactive nutrition tracking web application that helps you analyze 
 ## 📋 Features
 
 ### Core Functionality
+- **Meal Time Tracking**: Organize foods by meal time (Breakfast, Lunch, Evening Snacks, Dinner, Other)
+- **Food Categories**: Filter and select from three categories:
+  - 📦 **Packaged Food**: Branded products and processed foods
+  - 🥬 **Raw Food**: Fresh vegetables, fruits, and unprocessed ingredients
+  - 🍳 **Recipe**: Custom recipes created from existing foods
+- **Recipe Creation**: Create custom recipes by combining multiple ingredients
+  - Add ingredients with specific quantities
+  - Set number of servings
+  - Automatic nutrition calculation from ingredients
 - **Product Search & Selection**: Searchable dropdown with extensive product database
 - **Nutrition Analysis**: Real-time calculation of macronutrients and micronutrients
 - **Multiple Views**: Switch between totals and individual product views
@@ -17,11 +26,13 @@ A modern, interactive nutrition tracking web application that helps you analyze 
 ### User Experience
 - **Dark/Light Theme**: Toggle between themes with a single click
 - **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
+- **Meal Organization**: Selected foods automatically organized by meal time
 - **Product Database**: Pre-loaded with:
   - Packaged food products (oats, paneer, bread, milk, etc.)
   - Common Indian vegetables (25+ varieties with Hindi names)
 - **Custom Products**: Add your own products via JSON input
-- **Persistent Storage**: Products and selections saved in browser localStorage
+- **Recipe Management**: Create, save, and reuse custom recipes
+- **Persistent Storage**: Products, recipes, and selections saved in browser localStorage
 
 ## 🚀 Getting Started
 
@@ -63,30 +74,79 @@ Then open your browser and navigate to `http://localhost:8000` (or the port show
 
 ## 📖 How to Use
 
-### Adding Products
+### Adding Foods to Your Meal Plan
 
-1. **Search for Products**:
-   - Click on the search box in the "Add Product" panel
-   - Type to search through the product database
-   - Select a product from the dropdown
+1. **Select Meal Time**:
+   - Choose the meal time: 🌅 Breakfast, 🍽️ Lunch, ☕ Evening Snacks, 🌙 Dinner, or 📝 Other
+   - The selected meal time will be applied to all foods you add
 
-2. **Set Quantity**:
+2. **Choose Food Category**:
+   - **📦 Packaged Food**: For branded products and processed foods
+   - **🥬 Raw Food**: For fresh vegetables, fruits, and unprocessed ingredients
+   - **🍳 Recipe**: For custom recipes you've created
+
+3. **Search and Select**:
+   - Click on the search box in the "Add Food" panel
+   - Type to search through the selected category
+   - Select a food item from the dropdown
+
+4. **Set Quantity**:
    - Enter the amount you want to add
    - Choose the unit (grams/milliliters or servings)
-   - Click "Add" to add it to your selection
+   - Click "Add" to add it to your meal plan
 
-3. **Add Custom Products**:
+5. **View Organized Meals**:
+   - Selected foods are automatically organized by meal time
+   - Each meal time section shows all foods added to that meal
+
+### Creating Recipes
+
+1. **Open Recipe Creator**:
+   - Click the "🍳 Create Recipe" button in the header
+
+2. **Enter Recipe Details**:
+   - Enter a recipe name (e.g., "Dal Rice", "Paneer Curry")
+   - Set the number of servings the recipe makes
+
+3. **Add Ingredients**:
+   - Select an ingredient from the dropdown (all products are available)
+   - Enter the quantity and unit (g, ml, or servings)
+   - Click "Add" to add the ingredient
+   - Repeat for all ingredients
+
+4. **Save Recipe**:
+   - Review your ingredient list
+   - Click "Save Recipe" to save it
+   - The recipe will appear in the Recipe category for future use
+
+5. **Using Recipes**:
+   - Select the Recipe category tab
+   - Search for and select your saved recipe
+   - Enter the number of servings you consumed
+   - Nutrition is automatically calculated from all ingredients
+
+### Adding Custom Products
+
+1. **Open Add Product Modal**:
    - Click the "➕ Add Product" button in the header
+
+2. **Enter Product Data**:
    - Paste your product JSON in the modal
+   - Follow the product data format (see below)
+
+3. **Save Product**:
    - Click "Add Product" to save it
+   - The product will be available in the appropriate category
 
 ### Viewing Nutrition Information
 
-- **Totals View**: See aggregated nutrition values across all selected products
-- **Individual View**: See nutrition breakdown per product
+- **Meal Organization**: Foods are displayed grouped by meal time for easy tracking
+- **Totals View**: See aggregated nutrition values across all meals and foods
+- **Individual View**: See nutrition breakdown per food item with meal time labels
 - **Charts**: Visual representation of:
   - Macronutrients (Protein, Carbs, Fat)
   - Micronutrients (Vitamins and Minerals)
+- **Recipe Nutrition**: Recipes automatically calculate nutrition from combined ingredients
 
 ### Exporting Data
 
@@ -171,15 +231,37 @@ All vegetables include:
 
 ## 🎯 Key Features Explained
 
+### Meal Time Tracking
+- Organize your daily nutrition by meal times
+- Track breakfast, lunch, evening snacks, dinner, and other meals separately
+- Foods are automatically categorized and displayed by meal time
+- Perfect for meal planning and daily nutrition tracking
+
+### Food Categories
+- **Packaged Food**: Automatically filters products with brand names
+- **Raw Food**: Shows fresh vegetables and unprocessed ingredients (brand "Fresh" or empty)
+- **Recipe**: Displays all your custom-created recipes
+- Easy switching between categories for quick access
+
+### Recipe Creation
+- Combine multiple ingredients to create custom recipes
+- Set serving sizes for accurate nutrition per serving
+- Nutrition automatically calculated from all ingredients
+- Recipes saved to localStorage and available for reuse
+- Perfect for tracking home-cooked meals and complex dishes
+
 ### Nutrition Calculation
 - Automatically calculates nutrition values based on quantity and serving size
-- Supports multiple units (g, ml, kg, l)
+- Supports multiple units (g, ml, kg, l, servings)
 - Handles both per-100g and per-serving nutrition data
+- Recipe nutrition calculated from combined ingredient values
+- Accurate calculations for any quantity or serving size
 
 ### Responsive Design
 - Mobile-first approach
 - Breakpoints for tablets and mobile devices
 - Touch-friendly interface elements
+- Meal time buttons and category tabs optimized for mobile
 
 ### Theme Support
 - Light and dark themes
@@ -199,18 +281,32 @@ All vegetables include:
 1. Edit `products.json` and add your product following the format
 2. Or use the "Add Product" modal in the app
 3. Products are automatically saved to localStorage
+4. Products will appear in the appropriate category (Packaged or Raw) based on brand
+
+### Creating Recipes
+1. Use the "Create Recipe" button to build custom recipes
+2. Combine any products from your database
+3. Recipes are saved to localStorage
+4. Recipes appear in the Recipe category for easy access
 
 ### Modifying Styles
 - Edit `styles.css`
 - CSS variables are defined at the top for easy theme customization
 - Responsive breakpoints are clearly marked
+- Meal time buttons and category tabs can be customized
 
 ## 📝 Notes
 
 - All nutrition calculations are based on the data provided in `products.json`
 - The app uses client-side storage - data is stored in your browser
+  - Products are saved in `nutrition_products` key
+  - Recipes are saved in `nutrition_recipes` key
+  - Selected foods and theme preferences are also saved
 - For accurate nutrition tracking, ensure product data is up-to-date
-- Export functionality allows you to save your analysis for external use
+- Recipes calculate nutrition from their ingredients automatically
+- Foods are organized by meal time for better meal planning
+- Export functionality includes meal time and category information
+- Recipe nutrition is calculated per serving based on ingredient quantities
 
 ## 🐛 Troubleshooting
 
@@ -218,14 +314,27 @@ All vegetables include:
 - Ensure `products.json` is in the same directory as `index.html`
 - Check browser console for errors
 - Verify you're running on a local server (not file://)
+- Clear localStorage if you see old/corrupted data
+
+### Recipes not appearing
+- Ensure recipes are saved (check localStorage for `nutrition_recipes`)
+- Make sure you're viewing the Recipe category tab
+- Try creating a new recipe to test functionality
+
+### Category filtering not working
+- Packaged foods require a brand name (not "Fresh" or empty)
+- Raw foods should have brand "Fresh" or no brand
+- Recipes appear only in the Recipe category
 
 ### Charts not displaying
 - Ensure Chart.js CDN is accessible
 - Check browser console for JavaScript errors
+- Make sure you have foods selected
 
 ### Theme not persisting
 - Clear browser cache and localStorage
 - Ensure JavaScript is enabled
+- Check if localStorage is available in your browser
 
 ## 📄 License
 
@@ -235,9 +344,11 @@ This project is open source and available for personal and educational use.
 
 Feel free to:
 - Add more products to the database
+- Create and share recipe templates
 - Improve the UI/UX
-- Add new features
+- Add new features (e.g., meal planning, nutrition goals)
 - Report bugs
+- Suggest new meal times or categories
 
 ## 📧 Support
 

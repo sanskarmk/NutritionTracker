@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#0d6efd">
+    <title>Annalytica</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body data-theme="light">
+    <div class="header">
+        <h1><img src="icon.png" alt="Annalytica" class="header-icon"> Annalytica</h1>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="openCreateRecipeModal()">🍳 Create Recipe</button>
+            <button class="btn btn-primary" onclick="openAddProductModal()">➕ Add Product</button>
+            <button class="theme-toggle" onclick="toggleTheme()">🌓 Theme</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="panel">
+            <div class="panel-title">📦 Add Food</div>
+            
+            <!-- Meal Time Selection -->
+            <div class="meal-time-selector">
+                <label>Meal Time:</label>
+                <div class="meal-time-buttons">
+                    <button class="meal-time-btn active" data-meal="breakfast" onclick="selectMealTime('breakfast')">🌅 Breakfast</button>
+                    <button class="meal-time-btn" data-meal="lunch" onclick="selectMealTime('lunch')">🍽️ Lunch</button>
+                    <button class="meal-time-btn" data-meal="evening_snacks" onclick="selectMealTime('evening_snacks')">☕ Evening Snacks</button>
+                    <button class="meal-time-btn" data-meal="dinner" onclick="selectMealTime('dinner')">🌙 Dinner</button>
+                    <button class="meal-time-btn" data-meal="other" onclick="selectMealTime('other')">📝 Other</button>
+                </div>
+            </div>
+
+            <!-- Food Category Tabs -->
+            <div class="food-category-tabs">
+                <button class="category-tab active" data-category="packaged" onclick="selectCategory('packaged')">📦 Packaged Food</button>
+                <button class="category-tab" data-category="raw" onclick="selectCategory('raw')">🥬 Raw Food</button>
+                <button class="category-tab" data-category="recipe" onclick="selectCategory('recipe')">🍳 Recipe</button>
+            </div>
+
+            <div class="product-selector-wrapper">
+                <div class="searchable-dropdown">
+                    <div class="dropdown-input-wrapper">
+                        <input 
+                            type="text" 
+                            id="productSearch" 
+                            class="dropdown-input" 
+                            placeholder="🔍 Search or select a food..."
+                            autocomplete="off"
+                            onfocus="openDropdown()"
+                            oninput="filterProducts(this.value)"
+                            onkeydown="handleSearchKeydown(event)"
+                        >
+                        <button class="dropdown-toggle" onclick="toggleDropdown()" type="button" aria-label="Toggle dropdown">
+                            <span id="dropdownArrow">▼</span>
+                        </button>
+                    </div>
+                    <div class="dropdown-list" id="dropdownList">
+                        <div class="loading">Loading products...</div>
+                    </div>
+                </div>
+                <div class="selected-product-form" id="selectedProductForm" style="display: none;">
+                    <div class="selected-product-info">
+                        <div class="selected-product-name" id="selectedProductName"></div>
+                        <div class="selected-product-brand" id="selectedProductBrand"></div>
+                    </div>
+                    <div class="quantity-input">
+                        <input type="number" id="productQuantity" placeholder="Amount" min="0" step="0.1" value="100">
+                        <select id="productUnit">
+                            <option value="custom">g</option>
+                            <option value="servings">servings</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="addSelectedProduct()">Add</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">✅ Selected Foods</div>
+            <div class="selected-list" id="selectedList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📋</div>
+                    <div>No foods selected yet</div>
+                </div>
+            </div>
+            <div class="export-wrapper" id="exportButtons" style="display: none;">
+                <div class="export-dropdown">
+                    <button class="btn btn-primary export-main-btn" onclick="toggleExportMenu()" type="button">
+                        📥 Download
+                        <span class="export-arrow">▼</span>
+                    </button>
+                    <div class="export-menu" id="exportMenu">
+                        <button class="export-option" onclick="exportData('json'); closeExportMenu();">
+                            <span class="export-icon">📊</span>
+                            <span>Export JSON</span>
+                        </button>
+                        <button class="export-option" onclick="exportData('csv'); closeExportMenu();">
+                            <span class="export-icon">📄</span>
+                            <span>Export CSV</span>
+                        </button>
+                        <button class="export-option" onclick="exportCharts(); closeExportMenu();">
+                            <span class="export-icon">📈</span>
+                            <span>Export Charts</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nutrition-summary panel">
+            <div class="panel-title">📊 Nutrition Summary</div>
+            <div class="view-toggle">
+                <button class="view-toggle-btn active" onclick="setView('totals')" id="viewTotals">Totals</button>
+                <button class="view-toggle-btn" onclick="setView('individual')" id="viewIndividual">Individual</button>
+            </div>
+            <div id="nutritionDisplay">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📊</div>
+                    <div>Select products to see nutrition information</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-container">
+            <div class="chart-wrapper">
+                <h3 class="panel-title">🥗 Macronutrients</h3>
+                <canvas id="macroChart"></canvas>
+            </div>
+            <div class="chart-wrapper">
+                <h3 class="panel-title">💊 Micronutrients</h3>
+                <canvas id="microChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="addProductModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Product</h2>
+                <button class="modal-close" onclick="closeAddProductModal()">×</button>
+            </div>
+            <div id="jsonError"></div>
+            <textarea id="productJson" placeholder='Paste your product JSON here...&#10;&#10;Example:&#10;{&#10;  "product_name": "High Protein Cow Milk",&#10;  "brand": "Country Delight",&#10;  "serving_size": "250 ml",&#10;  "servings_per_container": "2",&#10;  "nutrition": { ... }&#10;}'></textarea>
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="addProduct()">Add Product</button>
+                <button class="btn" onclick="closeAddProductModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="createRecipeModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>🍳 Create Recipe</h2>
+                <button class="modal-close" onclick="closeCreateRecipeModal()">×</button>
+            </div>
+            <div class="recipe-form">
+                <div class="form-group">
+                    <label for="recipeName">Recipe Name:</label>
+                    <input type="text" id="recipeName" placeholder="e.g., Dal Rice, Paneer Curry" />
+                </div>
+                <div class="form-group">
+                    <label>Add Ingredients:</label>
+                    <div class="recipe-ingredient-selector">
+                        <select id="recipeIngredientSelect" class="recipe-select">
+                            <option value="">Select an ingredient...</option>
+                        </select>
+                        <input type="number" id="recipeIngredientQty" placeholder="Quantity" min="0" step="0.1" class="recipe-qty-input" />
+                        <select id="recipeIngredientUnit" class="recipe-unit-select">
+                            <option value="g">g</option>
+                            <option value="ml">ml</option>
+                            <option value="servings">servings</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="addRecipeIngredient()">Add</button>
+                    </div>
+                </div>
+                <div class="recipe-ingredients-list" id="recipeIngredientsList">
+                    <div class="empty-state-small">No ingredients added yet</div>
+                </div>
+                <div class="form-group">
+                    <label for="recipeServings">Number of Servings:</label>
+                    <input type="number" id="recipeServings" placeholder="e.g., 2" min="1" value="1" />
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="saveRecipe()">Save Recipe</button>
+                    <button class="btn" onclick="closeCreateRecipeModal()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
