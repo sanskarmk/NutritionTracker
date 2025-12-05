@@ -15,14 +15,11 @@
 <body data-theme="light">
     <div class="header">
         <h1><img src="icon.png" alt="Annalytica" class="header-icon"> Annalytica</h1>
-        <div class="header-actions">
-            <button class="btn btn-primary" onclick="openCreateRecipeModal()">🍳 Create Recipe</button>
-            <button class="btn btn-primary" onclick="openAddProductModal()">➕ Add Product</button>
-            <button class="theme-toggle" onclick="toggleTheme()">🌓 Theme</button>
-        </div>
     </div>
 
-    <div class="container">
+    <!-- Tab Content Sections -->
+    <div class="tab-content active" id="homeTab">
+        <div class="container">
         <div class="panel">
             <div class="panel-title">📦 Add Food</div>
             
@@ -118,8 +115,8 @@
         <div class="nutrition-summary panel">
             <div class="panel-title">📊 Nutrition Summary</div>
             <div class="view-toggle">
-                <button class="view-toggle-btn active" onclick="setView('totals')" id="viewTotals">Totals</button>
-                <button class="view-toggle-btn" onclick="setView('individual')" id="viewIndividual">Individual</button>
+                <button class="view-toggle-btn" onclick="setView('totals')" id="viewTotals">Totals</button>
+                <button class="view-toggle-btn active" onclick="setView('individual')" id="viewIndividual">Individual</button>
             </div>
             <div id="nutritionDisplay">
                 <div class="empty-state">
@@ -139,6 +136,69 @@
                 <canvas id="microChart"></canvas>
             </div>
         </div>
+        </div>
+    </div>
+
+    <!-- Recipes Tab -->
+    <div class="tab-content" id="recipesTab">
+        <div class="container">
+            <div class="panel">
+                <div class="panel-title">🍳 My Recipes</div>
+                <div id="recipesList" class="recipes-list">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🍳</div>
+                        <div>No recipes created yet</div>
+                        <button class="btn btn-primary" onclick="openCreateRecipeModal(); switchTab('recipes');" style="margin-top: 1rem;">Create Your First Recipe</button>
+                    </div>
+                </div>
+                <div style="margin-top: 1.5rem;">
+                    <button class="btn btn-primary" onclick="openCreateRecipeModal(); switchTab('recipes');" style="width: 100%;">➕ Create New Recipe</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div class="tab-content" id="settingsTab">
+        <div class="container">
+            <div class="panel">
+                <div class="panel-title">⚙️ Settings</div>
+                <div class="settings-list">
+                    <button class="settings-item" onclick="toggleTheme()">
+                        <span class="settings-icon">🌓</span>
+                        <div class="settings-content">
+                            <div class="settings-title">Theme</div>
+                            <div class="settings-subtitle">Switch between light and dark mode</div>
+                        </div>
+                        <span class="settings-arrow">›</span>
+                    </button>
+                    <button class="settings-item" onclick="openAddProductModal(); switchTab('settings');">
+                        <span class="settings-icon">➕</span>
+                        <div class="settings-content">
+                            <div class="settings-title">Add Product</div>
+                            <div class="settings-subtitle">Add a new food product to the database</div>
+                        </div>
+                        <span class="settings-arrow">›</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="switchTab('home')" data-tab="home">
+            <span class="nav-icon">📦</span>
+            <span class="nav-label">Add Food</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('recipes')" data-tab="recipes">
+            <span class="nav-icon">🍳</span>
+            <span class="nav-label">Recipes</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('settings')" data-tab="settings">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-label">Settings</span>
+        </button>
     </div>
 
     <div class="modal" id="addProductModal">

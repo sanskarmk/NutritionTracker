@@ -3,10 +3,90 @@ let recipes = [];
 let selectedProducts = new Map();
 let macroChart = null;
 let microChart = null;
-let currentView = 'totals';
+let currentView = 'individual';
 let currentMealTime = 'breakfast';
 let currentCategory = 'packaged';
 let recipeIngredients = [];
+
+// Tab navigation
+function switchTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Remove active class from all nav items
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    // Show selected tab
+    const selectedTab = document.getElementById(tabName + 'Tab');
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
+    
+    // Activate corresponding nav item
+    const navItem = document.querySelector(`[data-tab="${tabName}"]`);
+    if (navItem) {
+        navItem.classList.add('active');
+    }
+    
+    // Update content based on tab
+    if (tabName === 'recipes') {
+        renderRecipesList();
+    }
+}
+
+// Render recipes list
+function renderRecipesList() {
+    const container = document.getElementById('recipesList');
+    if (!container) return;
+    
+    if (recipes.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">🍳</div>
+                <div>No recipes created yet</div>
+                <button class="btn btn-primary" onclick="openCreateRecipeModal(); switchTab('recipes');" style="margin-top: 1rem;">Create Your First Recipe</button>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = recipes.map((recipe, index) => {
+        return `
+            <div class="recipe-card" onclick="selectRecipeFromList(${index})">
+                <div class="recipe-card-title">🍳 ${recipe.name}</div>
+                <div class="recipe-card-details">
+                    ${recipe.ingredients.length} ingredient${recipe.ingredients.length !== 1 ? 's' : ''} • ${recipe.servings} serving${recipe.servings !== 1 ? 's' : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Select recipe from list (for future use)
+function selectRecipeFromList(index) {
+    // Switch to home tab and select recipe category
+    switchTab('home');
+    selectCategory('recipe');
+    // Find and select the recipe in dropdown
+    setTimeout(() => {
+        const recipe = recipes[index];
+        const searchInput = document.getElementById('productSearch');
+        if (searchInput) {
+            searchInput.value = recipe.name;
+            filterProducts(recipe.name);
+            setTimeout(() => {
+                const recipeIndex = recipes.findIndex(r => r.name === recipe.name);
+                if (recipeIndex !== -1) {
+                    selectRecipeFromDropdown(recipeIndex);
+                }
+            }, 300);
+        }
+    }, 100);
+}
 
 // Initialize app
 async function initializeApp() {
@@ -37,6 +117,7 @@ async function initializeApp() {
         }
         renderProducts();
         updateRecipeIngredientSelect();
+        renderRecipesList();
     } catch (error) {
         console.error('Error loading products:', error);
         const dropdownList = document.getElementById('dropdownList');
@@ -651,11 +732,16 @@ function updateSummary() {
 
 // Display totals
 function displayTotals(totals, container) {
+    // Combine carbs values to avoid duplicates
+    const carbsValue = totals.total_carbohydrates_g || totals.carbohydrates_g || 0;
+    if (carbsValue > 0) {
+        totals.carbs_combined = carbsValue;
+    }
+    
     const macros = [
         { key: 'energy_kcal', label: 'Calories', unit: 'kcal', rda: 2000 },
         { key: 'protein_g', label: 'Protein', unit: 'g', rda: 50 },
-        { key: 'carbohydrates_g', label: 'Carbs', unit: 'g', rda: 300 },
-        { key: 'total_carbohydrates_g', label: 'Carbs', unit: 'g', rda: 300 },
+        { key: 'carbs_combined', label: 'Carbs', unit: 'g', rda: 300 },
         { key: 'total_fat_g', label: 'Fat', unit: 'g', rda: 65 }
     ];
 
@@ -689,11 +775,16 @@ function displayTotals(totals, container) {
 
 // Display individual breakdown
 function displayIndividual(individual, totals, container) {
+    // Combine carbs for totals
+    const carbsValue = totals.total_carbohydrates_g || totals.carbohydrates_g || 0;
+    if (carbsValue > 0) {
+        totals.carbs_combined = carbsValue;
+    }
+    
     const nutrients = [
         { key: 'energy_kcal', label: 'Calories', unit: 'kcal' },
         { key: 'protein_g', label: 'Protein', unit: 'g' },
-        { key: 'carbohydrates_g', label: 'Carbs', unit: 'g' },
-        { key: 'total_carbohydrates_g', label: 'Carbs', unit: 'g' },
+        { key: 'carbs_combined', label: 'Carbs', unit: 'g' },
         { key: 'total_fat_g', label: 'Fat', unit: 'g' },
         { key: 'total_sugars_g', label: 'Sugars', unit: 'g' },
         { key: 'sodium_mg', label: 'Sodium', unit: 'mg' },
@@ -703,16 +794,30 @@ function displayIndividual(individual, totals, container) {
     let html = '<div class="individual-nutrition">';
     
     individual.forEach(item => {
+        // Combine carbs for individual items
+        const itemCarbs = item.nutrition.total_carbohydrates_g || item.nutrition.carbohydrates_g || 0;
+        if (itemCarbs > 0) {
+            item.nutrition.carbs_combined = itemCarbs;
+        }
+        
         html += `
             <div class="individual-card">
-                <div class="individual-card-title">${item.product.product_name} (${item.displayAmount} ${item.displayUnit})</div>
-                ${nutrients.filter(n => item.nutrition[n.key] !== undefined && item.nutrition[n.key] > 0)
-                    .map(n => `
+                <div class="individual-card-title">${item.name} (${item.displayAmount} ${item.displayUnit})</div>
+                ${nutrients.filter(n => {
+                    if (n.key === 'carbs_combined') {
+                        return item.nutrition.carbs_combined !== undefined && item.nutrition.carbs_combined > 0;
+                    }
+                    return item.nutrition[n.key] !== undefined && item.nutrition[n.key] > 0;
+                })
+                    .map(n => {
+                        const value = n.key === 'carbs_combined' ? item.nutrition.carbs_combined : item.nutrition[n.key];
+                        return `
                         <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
                             <span>${n.label}:</span>
-                            <strong>${item.nutrition[n.key].toFixed(1)} ${n.unit}</strong>
-            </div>
-                    `).join('')}
+                            <strong>${value.toFixed(1)} ${n.unit}</strong>
+                        </div>
+                    `;
+                    }).join('')}
             </div>
         `;
     });
@@ -721,13 +826,21 @@ function displayIndividual(individual, totals, container) {
     html += `
         <div class="individual-card" style="border: 2px solid var(--accent);">
             <div class="individual-card-title" style="font-size: 1.1rem;">📊 Totals</div>
-            ${nutrients.filter(n => totals[n.key] !== undefined && totals[n.key] > 0)
-                .map(n => `
+            ${nutrients.filter(n => {
+                if (n.key === 'carbs_combined') {
+                    return totals.carbs_combined !== undefined && totals.carbs_combined > 0;
+                }
+                return totals[n.key] !== undefined && totals[n.key] > 0;
+            })
+                .map(n => {
+                    const value = n.key === 'carbs_combined' ? totals.carbs_combined : totals[n.key];
+                    return `
                     <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
                         <span>${n.label}:</span>
-                        <strong style="color: var(--accent);">${totals[n.key].toFixed(1)} ${n.unit}</strong>
+                        <strong style="color: var(--accent);">${value.toFixed(1)} ${n.unit}</strong>
                     </div>
-                `).join('')}
+                `;
+                }).join('')}
         </div>
     `;
 
@@ -1175,6 +1288,9 @@ function saveRecipe() {
     if (currentCategory === 'recipe') {
         renderProducts();
     }
+    
+    // Update recipes list
+    renderRecipesList();
     
     closeCreateRecipeModal();
     alert('Recipe created successfully!');
