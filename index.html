@@ -92,26 +92,9 @@
                 <button class="btn btn-success" onclick="openSaveToDailyLogModal()">
                     💾 Save to Daily Log
                 </button>
-                <div class="export-dropdown">
-                    <button class="btn btn-primary export-main-btn" onclick="toggleExportMenu()" type="button">
-                        📥 Download
-                        <span class="export-arrow">▼</span>
-                    </button>
-                    <div class="export-menu" id="exportMenu">
-                        <button class="export-option" onclick="exportData('json'); closeExportMenu();">
-                            <span class="export-icon">📊</span>
-                            <span>Export JSON</span>
-                        </button>
-                        <button class="export-option" onclick="exportData('csv'); closeExportMenu();">
-                            <span class="export-icon">📄</span>
-                            <span>Export CSV</span>
-                        </button>
-                        <button class="export-option" onclick="exportCharts(); closeExportMenu();">
-                            <span class="export-icon">📈</span>
-                            <span>Export Charts</span>
-                        </button>
-                    </div>
-                </div>
+                <button class="btn btn-primary" onclick="openDownloadModal()">
+                    📥 Download
+                </button>
             </div>
         </div>
 
@@ -168,39 +151,13 @@
                 <div class="panel-title">📅 Daily Food Log</div>
                 
                 <!-- Global Import/Export Buttons -->
-                <div class="history-actions" style="margin-bottom: 1rem; display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
-                    <div class="export-dropdown" style="position: relative;">
-                        <button class="btn btn-primary" onclick="toggleHistoryExportMenu()" type="button" style="padding: 0.6rem 1rem;">
-                            📥 Export
-                            <span class="export-arrow" id="historyExportArrow">▼</span>
-                        </button>
-                        <div class="export-menu" id="historyExportMenu" style="display: none;">
-                            <button class="export-option" onclick="exportHistoryData('json'); closeHistoryExportMenu();">
-                                <span class="export-icon">📊</span>
-                                <span>Export JSON</span>
-                            </button>
-                            <button class="export-option" onclick="exportHistoryData('csv'); closeHistoryExportMenu();">
-                                <span class="export-icon">📄</span>
-                                <span>Export CSV</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="export-dropdown" style="position: relative;">
-                        <button class="btn btn-success" onclick="toggleHistoryImportMenu()" type="button" style="padding: 0.6rem 1rem;">
-                            📤 Import
-                            <span class="export-arrow" id="historyImportArrow">▼</span>
-                        </button>
-                        <div class="export-menu" id="historyImportMenu" style="display: none;">
-                            <button class="export-option" onclick="triggerHistoryImport('json'); closeHistoryImportMenu();">
-                                <span class="export-icon">📊</span>
-                                <span>Import JSON</span>
-                            </button>
-                            <button class="export-option" onclick="triggerHistoryImport('csv'); closeHistoryImportMenu();">
-                                <span class="export-icon">📄</span>
-                                <span>Import CSV</span>
-                            </button>
-                        </div>
-                    </div>
+                <div class="history-actions">
+                    <button class="btn btn-primary" onclick="openHistoryExportModal()">
+                        📥 Export
+                    </button>
+                    <button class="btn btn-success" onclick="openHistoryImportModal()">
+                        📤 Import
+                    </button>
                 </div>
                 
                 <div class="date-selector">
@@ -310,6 +267,40 @@
         </div>
     </div>
 
+    <div class="modal" id="downloadModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📥 Download Options</h2>
+                <button class="modal-close" onclick="closeDownloadModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="download-options">
+                    <button class="download-option-btn" onclick="exportData('json'); closeDownloadModal();">
+                        <span class="download-option-icon">📊</span>
+                        <div class="download-option-content">
+                            <div class="download-option-title">Export JSON</div>
+                            <div class="download-option-desc">Download data as JSON file</div>
+                        </div>
+                    </button>
+                    <button class="download-option-btn" onclick="exportData('csv'); closeDownloadModal();">
+                        <span class="download-option-icon">📄</span>
+                        <div class="download-option-content">
+                            <div class="download-option-title">Export CSV</div>
+                            <div class="download-option-desc">Download data as spreadsheet</div>
+                        </div>
+                    </button>
+                    <button class="download-option-btn" onclick="exportCharts(); closeDownloadModal();">
+                        <span class="download-option-icon">📈</span>
+                        <div class="download-option-content">
+                            <div class="download-option-title">Export Charts</div>
+                            <div class="download-option-desc">Download nutrition charts as image</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal" id="createRecipeModal">
         <div class="modal-content modal-large">
             <div class="modal-header">
@@ -369,6 +360,62 @@
             <div class="action-buttons">
                 <button class="btn btn-success" onclick="confirmSaveToDailyLog()">💾 Save</button>
                 <button class="btn" onclick="closeSaveToDailyLogModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Export Modal -->
+    <div class="modal" id="historyExportModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📥 Export History</h2>
+                <button class="modal-close" onclick="closeHistoryExportModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="download-options">
+                    <button class="download-option-btn" onclick="exportHistoryData('json'); closeHistoryExportModal();">
+                        <span class="download-option-icon">📊</span>
+                        <div class="download-option-content">
+                            <div class="download-option-title">Export JSON</div>
+                            <div class="download-option-desc">Download all history data as JSON</div>
+                        </div>
+                    </button>
+                    <button class="download-option-btn" onclick="exportHistoryData('csv'); closeHistoryExportModal();">
+                        <span class="download-option-icon">📄</span>
+                        <div class="download-option-content">
+                            <div class="download-option-title">Export CSV</div>
+                            <div class="download-option-desc">Download history as spreadsheet</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Import Modal -->
+    <div class="modal" id="historyImportModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📤 Import History</h2>
+                <button class="modal-close" onclick="closeHistoryImportModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="download-options">
+                    <button class="download-option-btn" onclick="triggerHistoryImport('json'); closeHistoryImportModal();">
+                        <span class="download-option-icon">📊</span>
+                        <div class="download-option-content">
+                            <div class="download-option-title">Import JSON</div>
+                            <div class="download-option-desc">Upload JSON history file</div>
+                        </div>
+                    </button>
+                    <button class="download-option-btn" onclick="triggerHistoryImport('csv'); closeHistoryImportModal();">
+                        <span class="download-option-icon">📄</span>
+                        <div class="download-option-content">
+                            <div class="download-option-title">Import CSV</div>
+                            <div class="download-option-desc">Upload CSV history file</div>
+                        </div>
+                    </button>
+                </div>
             </div>
         </div>
     </div>

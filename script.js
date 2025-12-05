@@ -1485,26 +1485,14 @@ function exportCharts() {
     }, 500);
 }
 
-// Export menu functions
-function toggleExportMenu() {
-    const dropdown = document.querySelector('.export-dropdown');
-    dropdown.classList.toggle('active');
+// Download modal functions
+function openDownloadModal() {
+    document.getElementById('downloadModal').style.display = 'flex';
 }
 
-function closeExportMenu() {
-    const dropdown = document.querySelector('.export-dropdown');
-    dropdown.classList.remove('active');
+function closeDownloadModal() {
+    document.getElementById('downloadModal').style.display = 'none';
 }
-
-// Close export menu when clicking outside
-document.addEventListener('click', function(event) {
-    const exportDropdown = document.querySelector('.export-dropdown');
-    if (exportDropdown && exportDropdown.classList.contains('active')) {
-        if (!exportDropdown.contains(event.target)) {
-            closeExportMenu();
-        }
-    }
-});
 
 // Recipe creation functions
 function openCreateRecipeModal() {
@@ -1659,48 +1647,22 @@ initializeApp();
 
 // ===== History Import/Export Functions =====
 
-// Toggle history export menu
-function toggleHistoryExportMenu() {
-    const menu = document.getElementById('historyExportMenu');
-    const arrow = document.getElementById('historyExportArrow');
-    if (menu && arrow) {
-        const isOpen = menu.style.display === 'block';
-        menu.style.display = isOpen ? 'none' : 'block';
-        arrow.textContent = isOpen ? '▼' : '▲';
-    }
-    // Close import menu if open
-    closeHistoryImportMenu();
+// History Export Modal
+function openHistoryExportModal() {
+    document.getElementById('historyExportModal').style.display = 'flex';
 }
 
-function closeHistoryExportMenu() {
-    const menu = document.getElementById('historyExportMenu');
-    const arrow = document.getElementById('historyExportArrow');
-    if (menu && arrow) {
-        menu.style.display = 'none';
-        arrow.textContent = '▼';
-    }
+function closeHistoryExportModal() {
+    document.getElementById('historyExportModal').style.display = 'none';
 }
 
-// Toggle history import menu
-function toggleHistoryImportMenu() {
-    const menu = document.getElementById('historyImportMenu');
-    const arrow = document.getElementById('historyImportArrow');
-    if (menu && arrow) {
-        const isOpen = menu.style.display === 'block';
-        menu.style.display = isOpen ? 'none' : 'block';
-        arrow.textContent = isOpen ? '▼' : '▲';
-    }
-    // Close export menu if open
-    closeHistoryExportMenu();
+// History Import Modal
+function openHistoryImportModal() {
+    document.getElementById('historyImportModal').style.display = 'flex';
 }
 
-function closeHistoryImportMenu() {
-    const menu = document.getElementById('historyImportMenu');
-    const arrow = document.getElementById('historyImportArrow');
-    if (menu && arrow) {
-        menu.style.display = 'none';
-        arrow.textContent = '▼';
-    }
+function closeHistoryImportModal() {
+    document.getElementById('historyImportModal').style.display = 'none';
 }
 
 // Export history data
@@ -2024,24 +1986,3 @@ function calculateTotalNutrition(meals) {
     
     return totals;
 }
-
-// Close menus when clicking outside
-document.addEventListener('click', function(event) {
-    const exportMenu = document.getElementById('historyExportMenu');
-    const importMenu = document.getElementById('historyImportMenu');
-    
-    // Check if click is outside export/import buttons and menus
-    if (exportMenu && exportMenu.style.display === 'block') {
-        const exportDropdown = exportMenu.closest('.export-dropdown');
-        if (exportDropdown && !exportDropdown.contains(event.target)) {
-            closeHistoryExportMenu();
-        }
-    }
-    
-    if (importMenu && importMenu.style.display === 'block') {
-        const importDropdown = importMenu.closest('.export-dropdown');
-        if (importDropdown && !importDropdown.contains(event.target)) {
-            closeHistoryImportMenu();
-        }
-    }
-});
