@@ -7,6 +7,17 @@ let currentView = 'individual';
 let currentMealTime = 'breakfast';
 let currentCategory = 'packaged';
 let recipeIngredients = [];
+let dailyLogs = {}; // Store daily food logs { 'YYYY-MM-DD': { meals: [], totalNutrition: {} } }
+let currentDate = getLocalDateString(); // Current selected date
+let weeklyChart = null;
+
+// Helper function to get local date string in YYYY-MM-DD format
+function getLocalDateString(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
 
 // Tab navigation
 function switchTab(tabName) {
@@ -35,6 +46,8 @@ function switchTab(tabName) {
     // Update content based on tab
     if (tabName === 'recipes') {
         renderRecipesList();
+    } else if (tabName === 'history') {
+        initializeHistoryTab();
     }
 }
 
@@ -95,6 +108,12 @@ async function initializeApp() {
         const storedRecipes = localStorage.getItem('nutrition_recipes');
         if (storedRecipes) {
             recipes = JSON.parse(storedRecipes);
+        }
+
+        // Load daily logs from localStorage
+        const storedLogs = localStorage.getItem('nutrition_daily_logs');
+        if (storedLogs) {
+            dailyLogs = JSON.parse(storedLogs);
         }
 
         // Try to load from localStorage first
@@ -195,6 +214,342 @@ function saveRecipes() {
     localStorage.setItem('nutrition_recipes', JSON.stringify(recipes));
 }
 
+// Save daily logs to localStorage
+function saveDailyLogs() {
+    localStorage.setItem('nutrition_daily_logs', JSON.stringify(dailyLogs));
+}
+
+// Initialize history tab
+function initializeHistoryTab() {
+    const dateInput = document.getElementById('selectedDate');
+    if (dateInput) {
+        dateInput.value = currentDate;
+    }
+    loadDailyLog();
+    renderWeeklyChart();
+}
+
+// Set date to today
+function setToday() {
+    currentDate = getLocalDateString();
+    const dateInput = document.getElementById('selectedDate');
+    if (dateInput) {
+        dateInput.value = currentDate;
+    }
+    loadDailyLog();
+}
+
+// Change date by offset
+function changeDate(offset) {
+    const date = new Date(currentDate + 'T00:00:00');
+    date.setDate(date.getDate() + offset);
+    currentDate = getLocalDateString(date);
+    const dateInput = document.getElementById('selectedDate');
+    if (dateInput) {
+        dateInput.value = currentDate;
+    }
+    loadDailyLog();
+}
+
+// Load daily log for selected date
+function loadDailyLog() {
+    const dateInput = document.getElementById('selectedDate');
+    if (dateInput && dateInput.value) {
+        currentDate = dateInput.value;
+    }
+    
+    const dayLog = dailyLogs[currentDate] || { meals: [], totalNutrition: {} };
+    
+    // Update daily summary
+    updateDailySummary(dayLog.totalNutrition);
+    
+    // Render meals list
+    renderDailyMeals(dayLog.meals);
+    
+    // Update weekly chart
+    renderWeeklyChart();
+}
+
+// Update daily summary display
+function updateDailySummary(nutrition) {
+    const caloriesEl = document.getElementById('dailyCalories');
+    const proteinEl = document.getElementById('dailyProtein');
+    const carbsEl = document.getElementById('dailyCarbs');
+    const fatEl = document.getElementById('dailyFat');
+    
+    if (caloriesEl) caloriesEl.textContent = Math.round(nutrition.energy_kcal || 0);
+    if (proteinEl) proteinEl.textContent = (nutrition.protein || 0).toFixed(1) + 'g';
+    if (carbsEl) carbsEl.textContent = (nutrition.carbohydrate || 0).toFixed(1) + 'g';
+    if (fatEl) fatEl.textContent = (nutrition.total_fat || 0).toFixed(1) + 'g';
+}
+
+// Render daily meals list
+function renderDailyMeals(meals) {
+    const container = document.getElementById('dailyMealsList');
+    if (!container) return;
+    
+    if (meals.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">🍽️</div>
+                <div>No meals logged for this day</div>
+            </div>
+        `;
+        return;
+    }
+    
+    // Group meals by meal time
+    const mealGroups = {
+        breakfast: [],
+        lunch: [],
+        evening_snacks: [],
+        dinner: [],
+        other: []
+    };
+    
+    meals.forEach(meal => {
+        const mealTime = meal.mealTime || 'other';
+        if (mealGroups[mealTime]) {
+            mealGroups[mealTime].push(meal);
+        } else {
+            mealGroups.other.push(meal);
+        }
+    });
+    
+    const mealTimeLabels = {
+        breakfast: '🌅 Breakfast',
+        lunch: '🍽️ Lunch',
+        evening_snacks: '☕ Evening Snacks',
+        dinner: '🌙 Dinner',
+        other: '📝 Other'
+    };
+    
+    let html = '';
+    Object.keys(mealGroups).forEach(mealTime => {
+        if (mealGroups[mealTime].length > 0) {
+            html += `<div class="meal-group">
+                <div class="meal-group-title">${mealTimeLabels[mealTime]}</div>`;
+            
+            mealGroups[mealTime].forEach((meal, idx) => {
+                const calories = Math.round(meal.nutrition?.energy_kcal || 0);
+                const protein = (meal.nutrition?.protein || 0).toFixed(1);
+                const deleteBtn = currentDate === getLocalDateString() 
+                    ? `<button class="meal-item-delete" onclick="deleteMealFromLog('${currentDate}', '${mealTime}', ${idx})">×</button>`
+                    : '';
+                
+                html += `
+                    <div class="meal-item">
+                        <div class="meal-item-info">
+                            <div class="meal-item-name">${meal.displayName}</div>
+                            <div class="meal-item-details">${meal.displayBrand}</div>
+                        </div>
+                        <div class="meal-item-nutrition">
+                            <div>${calories} kcal</div>
+                            <div>${protein}g protein</div>
+                        </div>
+                        ${deleteBtn}
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+        }
+    });
+    
+    container.innerHTML = html;
+}
+
+// Delete meal from log
+function deleteMealFromLog(date, mealTime, index) {
+    if (!dailyLogs[date]) return;
+    
+    // Find and remove the meal
+    const meals = dailyLogs[date].meals;
+    const mealTimeItems = meals.filter(m => m.mealTime === mealTime);
+    
+    if (index >= 0 && index < mealTimeItems.length) {
+        const mealToRemove = mealTimeItems[index];
+        const mealIndex = meals.indexOf(mealToRemove);
+        meals.splice(mealIndex, 1);
+        
+        // Recalculate totals
+        dailyLogs[date].totalNutrition = calculateTotalNutrition(meals);
+        saveDailyLogs();
+        loadDailyLog();
+    }
+}
+
+// Calculate total nutrition from meals
+function calculateTotalNutrition(meals) {
+    const total = {};
+    
+    meals.forEach(meal => {
+        if (meal.nutrition) {
+            Object.keys(meal.nutrition).forEach(key => {
+                if (!total[key]) total[key] = 0;
+                total[key] += meal.nutrition[key] || 0;
+            });
+        }
+    });
+    
+    return total;
+}
+
+// Open save to daily log modal
+function openSaveToDailyLogModal() {
+    if (selectedProducts.size === 0) {
+        alert('Please add some foods first');
+        return;
+    }
+    
+    const modal = document.getElementById('saveToDailyLogModal');
+    const dateInput = document.getElementById('saveLogDate');
+    const itemCount = document.getElementById('saveLogItemCount');
+    
+    // Set default date to today
+    dateInput.value = getLocalDateString();
+    itemCount.textContent = selectedProducts.size;
+    
+    modal.style.display = 'flex';
+}
+
+// Close save to daily log modal
+function closeSaveToDailyLogModal() {
+    const modal = document.getElementById('saveToDailyLogModal');
+    modal.style.display = 'none';
+}
+
+// Confirm and save to daily log
+function confirmSaveToDailyLog() {
+    const dateInput = document.getElementById('saveLogDate');
+    const selectedDate = dateInput.value;
+    
+    if (!selectedDate) {
+        alert('Please select a date');
+        return;
+    }
+    
+    saveToDailyLog(selectedDate);
+    closeSaveToDailyLogModal();
+}
+
+// Save current selection to daily log
+function saveToDailyLog(dateStr = null) {
+    const targetDate = dateStr || getLocalDateString();
+    
+    if (!dailyLogs[targetDate]) {
+        dailyLogs[targetDate] = { meals: [], totalNutrition: {} };
+    }
+    
+    // Convert selectedProducts to meals array
+    const meals = Array.from(selectedProducts.values()).map(item => {
+        let nutrition = {};
+        
+        if (item.type === 'recipe') {
+            nutrition = item.nutrition;
+        } else if (item.type === 'product') {
+            // Calculate nutrition for product
+            const product = item.product;
+            const multiplier = item.amount / 100;
+            
+            Object.keys(product.nutrition_per_100 || {}).forEach(key => {
+                nutrition[key] = (product.nutrition_per_100[key] || 0) * multiplier;
+            });
+        }
+        
+        return {
+            displayName: item.displayName,
+            displayBrand: item.displayBrand,
+            mealTime: item.mealTime,
+            category: item.category,
+            nutrition: nutrition,
+            timestamp: Date.now()
+        };
+    });
+    
+    // Add meals to target date's log
+    dailyLogs[targetDate].meals.push(...meals);
+    
+    // Calculate total nutrition
+    dailyLogs[targetDate].totalNutrition = calculateTotalNutrition(dailyLogs[targetDate].meals);
+    
+    // Save to localStorage
+    saveDailyLogs();
+    
+    // Clear current selection
+    selectedProducts.clear();
+    renderSelected();
+    updateSummary();
+    
+    // Show confirmation
+    alert('Meals saved to daily log!');
+}
+
+// Render weekly calories chart
+function renderWeeklyChart() {
+    const canvas = document.getElementById('weeklyCaloriesChart');
+    if (!canvas) return;
+    
+    // Get last 7 days
+    const dates = [];
+    const calories = [];
+    const today = new Date();
+    
+    for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = getLocalDateString(date);
+        const dayLog = dailyLogs[dateStr] || { totalNutrition: {} };
+        
+        dates.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+        calories.push(Math.round(dayLog.totalNutrition.energy_kcal || 0));
+    }
+    
+    const ctx = canvas.getContext('2d');
+    
+    if (weeklyChart) {
+        weeklyChart.destroy();
+    }
+    
+    const theme = document.body.getAttribute('data-theme');
+    const textColor = theme === 'dark' ? '#e9ecef' : '#212529';
+    const gridColor = theme === 'dark' ? '#404040' : '#dee2e6';
+    
+    weeklyChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: dates,
+            datasets: [{
+                label: 'Calories',
+                data: calories,
+                backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                borderColor: 'rgba(13, 110, 253, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: textColor },
+                    grid: { color: gridColor }
+                },
+                x: {
+                    ticks: { color: textColor },
+                    grid: { color: gridColor }
+                }
+            }
+        }
+    });
+}
+
 // Toggle theme
 function toggleTheme() {
     const current = document.body.getAttribute('data-theme');
@@ -202,6 +557,9 @@ function toggleTheme() {
     document.body.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
     updateCharts();
+    if (weeklyChart) {
+        renderWeeklyChart();
+    }
 }
 
 // Load saved theme
@@ -1298,3 +1656,392 @@ function saveRecipe() {
 
 // Initialize on load
 initializeApp();
+
+// ===== History Import/Export Functions =====
+
+// Toggle history export menu
+function toggleHistoryExportMenu() {
+    const menu = document.getElementById('historyExportMenu');
+    const arrow = document.getElementById('historyExportArrow');
+    if (menu && arrow) {
+        const isOpen = menu.style.display === 'block';
+        menu.style.display = isOpen ? 'none' : 'block';
+        arrow.textContent = isOpen ? '▼' : '▲';
+    }
+    // Close import menu if open
+    closeHistoryImportMenu();
+}
+
+function closeHistoryExportMenu() {
+    const menu = document.getElementById('historyExportMenu');
+    const arrow = document.getElementById('historyExportArrow');
+    if (menu && arrow) {
+        menu.style.display = 'none';
+        arrow.textContent = '▼';
+    }
+}
+
+// Toggle history import menu
+function toggleHistoryImportMenu() {
+    const menu = document.getElementById('historyImportMenu');
+    const arrow = document.getElementById('historyImportArrow');
+    if (menu && arrow) {
+        const isOpen = menu.style.display === 'block';
+        menu.style.display = isOpen ? 'none' : 'block';
+        arrow.textContent = isOpen ? '▼' : '▲';
+    }
+    // Close export menu if open
+    closeHistoryExportMenu();
+}
+
+function closeHistoryImportMenu() {
+    const menu = document.getElementById('historyImportMenu');
+    const arrow = document.getElementById('historyImportArrow');
+    if (menu && arrow) {
+        menu.style.display = 'none';
+        arrow.textContent = '▼';
+    }
+}
+
+// Export history data
+function exportHistoryData(format) {
+    if (format === 'json') {
+        exportHistoryAsJSON();
+    } else if (format === 'csv') {
+        exportHistoryAsCSV();
+    }
+}
+
+// Export history as JSON
+function exportHistoryAsJSON() {
+    const exportData = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        dailyLogs: dailyLogs
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `nutrition-history-${getLocalDateString()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Export history as CSV
+function exportHistoryAsCSV() {
+    const rows = [];
+    
+    // CSV Headers
+    rows.push(['Date', 'Meal Time', 'Food Name', 'Brand', 'Quantity', 'Unit', 'Calories', 'Protein (g)', 'Carbs (g)', 'Fat (g)']);
+    
+    // Sort dates
+    const sortedDates = Object.keys(dailyLogs).sort();
+    
+    // Process each date
+    for (const date of sortedDates) {
+        const dayLog = dailyLogs[date];
+        if (dayLog.meals && dayLog.meals.length > 0) {
+            for (const meal of dayLog.meals) {
+                const mealTime = meal.mealTime || 'other';
+                for (const item of meal.items) {
+                    rows.push([
+                        date,
+                        mealTime,
+                        item.product_name || '',
+                        item.brand || '',
+                        item.selectedQuantity || '',
+                        item.selectedUnit || '',
+                        Math.round(item.nutrition?.energy_kcal || 0),
+                        Math.round((item.nutrition?.protein_g || 0) * 10) / 10,
+                        Math.round((item.nutrition?.carbohydrates_g || 0) * 10) / 10,
+                        Math.round((item.nutrition?.fat_g || 0) * 10) / 10
+                    ]);
+                }
+            }
+        }
+    }
+    
+    // Convert to CSV string
+    const csvContent = rows.map(row => 
+        row.map(cell => {
+            // Escape quotes and wrap in quotes if needed
+            const cellStr = String(cell);
+            if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+                return '"' + cellStr.replace(/"/g, '""') + '"';
+            }
+            return cellStr;
+        }).join(',')
+    ).join('\n');
+    
+    // Download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `nutrition-history-${getLocalDateString()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Trigger file input for import
+function triggerHistoryImport(format) {
+    if (format === 'json') {
+        document.getElementById('historyJsonImport').click();
+    } else if (format === 'csv') {
+        document.getElementById('historyCsvImport').click();
+    }
+}
+
+// Handle history import
+function handleHistoryImport(event, format) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        try {
+            if (format === 'json') {
+                importHistoryFromJSON(e.target.result);
+            } else if (format === 'csv') {
+                importHistoryFromCSV(e.target.result);
+            }
+        } catch (error) {
+            alert('Error importing file: ' + error.message);
+            console.error('Import error:', error);
+        }
+    };
+    
+    if (format === 'json') {
+        reader.readAsText(file);
+    } else if (format === 'csv') {
+        reader.readAsText(file);
+    }
+    
+    // Reset file input
+    event.target.value = '';
+}
+
+// Import history from JSON
+function importHistoryFromJSON(jsonString) {
+    const importData = JSON.parse(jsonString);
+    
+    // Validate structure
+    if (!importData.dailyLogs) {
+        throw new Error('Invalid JSON format: missing dailyLogs');
+    }
+    
+    // Ask user for import strategy
+    const strategy = confirm(
+        'Click OK to MERGE with existing data.\nClick Cancel to REPLACE all existing data.'
+    );
+    
+    if (strategy) {
+        // Merge strategy
+        for (const date in importData.dailyLogs) {
+            if (!dailyLogs[date]) {
+                dailyLogs[date] = importData.dailyLogs[date];
+            } else {
+                // Merge meals for existing dates
+                const existingMeals = dailyLogs[date].meals || [];
+                const importedMeals = importData.dailyLogs[date].meals || [];
+                dailyLogs[date].meals = [...existingMeals, ...importedMeals];
+                // Recalculate totals
+                dailyLogs[date].totalNutrition = calculateTotalNutrition(dailyLogs[date].meals);
+            }
+        }
+    } else {
+        // Replace strategy
+        dailyLogs = importData.dailyLogs;
+    }
+    
+    saveDailyLogs();
+    loadDailyLog();
+    renderWeeklyChart();
+    
+    alert('History imported successfully!');
+}
+
+// Import history from CSV
+function importHistoryFromCSV(csvString) {
+    const lines = csvString.split('\n').filter(line => line.trim());
+    
+    if (lines.length < 2) {
+        throw new Error('CSV file is empty or invalid');
+    }
+    
+    // Skip header row
+    const dataLines = lines.slice(1);
+    
+    // Parse CSV
+    const parsedData = {};
+    
+    for (const line of dataLines) {
+        const values = parseCSVLine(line);
+        
+        if (values.length < 10) continue; // Skip invalid rows
+        
+        const [date, mealTime, foodName, brand, quantity, unit, calories, protein, carbs, fat] = values;
+        
+        if (!date || !foodName) continue; // Skip rows without essential data
+        
+        // Initialize date entry if needed
+        if (!parsedData[date]) {
+            parsedData[date] = {
+                meals: [],
+                totalNutrition: {}
+            };
+        }
+        
+        // Find or create meal entry
+        let meal = parsedData[date].meals.find(m => m.mealTime === mealTime);
+        if (!meal) {
+            meal = {
+                mealTime: mealTime,
+                timestamp: new Date(date).toISOString(),
+                items: []
+            };
+            parsedData[date].meals.push(meal);
+        }
+        
+        // Add item to meal
+        meal.items.push({
+            product_name: foodName,
+            brand: brand,
+            selectedQuantity: parseFloat(quantity) || 0,
+            selectedUnit: unit || 'g',
+            nutrition: {
+                energy_kcal: parseFloat(calories) || 0,
+                protein_g: parseFloat(protein) || 0,
+                carbohydrates_g: parseFloat(carbs) || 0,
+                fat_g: parseFloat(fat) || 0
+            }
+        });
+    }
+    
+    // Recalculate totals for each date
+    for (const date in parsedData) {
+        parsedData[date].totalNutrition = calculateTotalNutrition(parsedData[date].meals);
+    }
+    
+    // Ask user for import strategy
+    const strategy = confirm(
+        'Click OK to MERGE with existing data.\nClick Cancel to REPLACE all existing data.'
+    );
+    
+    if (strategy) {
+        // Merge strategy
+        for (const date in parsedData) {
+            if (!dailyLogs[date]) {
+                dailyLogs[date] = parsedData[date];
+            } else {
+                const existingMeals = dailyLogs[date].meals || [];
+                const importedMeals = parsedData[date].meals || [];
+                dailyLogs[date].meals = [...existingMeals, ...importedMeals];
+                dailyLogs[date].totalNutrition = calculateTotalNutrition(dailyLogs[date].meals);
+            }
+        }
+    } else {
+        // Replace strategy
+        dailyLogs = parsedData;
+    }
+    
+    saveDailyLogs();
+    loadDailyLog();
+    renderWeeklyChart();
+    
+    alert('History imported successfully from CSV!');
+}
+
+// Parse CSV line handling quoted values
+function parseCSVLine(line) {
+    const values = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        const nextChar = line[i + 1];
+        
+        if (char === '"') {
+            if (inQuotes && nextChar === '"') {
+                // Escaped quote
+                current += '"';
+                i++; // Skip next quote
+            } else {
+                // Toggle quote state
+                inQuotes = !inQuotes;
+            }
+        } else if (char === ',' && !inQuotes) {
+            // End of field
+            values.push(current.trim());
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    
+    // Add last field
+    values.push(current.trim());
+    
+    return values;
+}
+
+// Calculate total nutrition from meals
+function calculateTotalNutrition(meals) {
+    const totals = {
+        energy_kcal: 0,
+        protein_g: 0,
+        carbohydrates_g: 0,
+        fat_g: 0,
+        fiber_g: 0,
+        sugar_g: 0,
+        sodium_mg: 0,
+        calcium_mg: 0,
+        iron_mg: 0,
+        vitamin_a_mcg: 0,
+        vitamin_c_mg: 0
+    };
+    
+    for (const meal of meals) {
+        for (const item of meal.items) {
+            if (item.nutrition) {
+                for (const key in totals) {
+                    totals[key] += item.nutrition[key] || 0;
+                }
+            }
+        }
+    }
+    
+    return totals;
+}
+
+// Close menus when clicking outside
+document.addEventListener('click', function(event) {
+    const exportMenu = document.getElementById('historyExportMenu');
+    const importMenu = document.getElementById('historyImportMenu');
+    
+    // Check if click is outside export/import buttons and menus
+    if (exportMenu && exportMenu.style.display === 'block') {
+        const exportDropdown = exportMenu.closest('.export-dropdown');
+        if (exportDropdown && !exportDropdown.contains(event.target)) {
+            closeHistoryExportMenu();
+        }
+    }
+    
+    if (importMenu && importMenu.style.display === 'block') {
+        const importDropdown = importMenu.closest('.export-dropdown');
+        if (importDropdown && !importDropdown.contains(event.target)) {
+            closeHistoryImportMenu();
+        }
+    }
+});

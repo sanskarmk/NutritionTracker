@@ -89,6 +89,9 @@
                 </div>
             </div>
             <div class="export-wrapper" id="exportButtons" style="display: none;">
+                <button class="btn btn-success" onclick="openSaveToDailyLogModal()">
+                    💾 Save to Daily Log
+                </button>
                 <div class="export-dropdown">
                     <button class="btn btn-primary export-main-btn" onclick="toggleExportMenu()" type="button">
                         📥 Download
@@ -158,6 +161,93 @@
         </div>
     </div>
 
+    <!-- History Tab -->
+    <div class="tab-content" id="historyTab">
+        <div class="container">
+            <div class="panel">
+                <div class="panel-title">📅 Daily Food Log</div>
+                
+                <!-- Global Import/Export Buttons -->
+                <div class="history-actions" style="margin-bottom: 1rem; display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                    <div class="export-dropdown" style="position: relative;">
+                        <button class="btn btn-primary" onclick="toggleHistoryExportMenu()" type="button" style="padding: 0.6rem 1rem;">
+                            📥 Export
+                            <span class="export-arrow" id="historyExportArrow">▼</span>
+                        </button>
+                        <div class="export-menu" id="historyExportMenu" style="display: none;">
+                            <button class="export-option" onclick="exportHistoryData('json'); closeHistoryExportMenu();">
+                                <span class="export-icon">📊</span>
+                                <span>Export JSON</span>
+                            </button>
+                            <button class="export-option" onclick="exportHistoryData('csv'); closeHistoryExportMenu();">
+                                <span class="export-icon">📄</span>
+                                <span>Export CSV</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="export-dropdown" style="position: relative;">
+                        <button class="btn btn-success" onclick="toggleHistoryImportMenu()" type="button" style="padding: 0.6rem 1rem;">
+                            📤 Import
+                            <span class="export-arrow" id="historyImportArrow">▼</span>
+                        </button>
+                        <div class="export-menu" id="historyImportMenu" style="display: none;">
+                            <button class="export-option" onclick="triggerHistoryImport('json'); closeHistoryImportMenu();">
+                                <span class="export-icon">📊</span>
+                                <span>Import JSON</span>
+                            </button>
+                            <button class="export-option" onclick="triggerHistoryImport('csv'); closeHistoryImportMenu();">
+                                <span class="export-icon">📄</span>
+                                <span>Import CSV</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="date-selector">
+                    <button class="date-nav-btn" onclick="changeDate(-1)">‹</button>
+                    <input type="date" id="selectedDate" class="date-input" onchange="loadDailyLog()">
+                    <button class="date-nav-btn" onclick="changeDate(1)">›</button>
+                    <button class="btn btn-secondary" onclick="setToday()">Today</button>
+                </div>
+                <div class="daily-summary" id="dailySummary">
+                    <div class="summary-card">
+                        <div class="summary-label">Total Calories</div>
+                        <div class="summary-value" id="dailyCalories">0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Protein</div>
+                        <div class="summary-value" id="dailyProtein">0g</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Carbs</div>
+                        <div class="summary-value" id="dailyCarbs">0g</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Fat</div>
+                        <div class="summary-value" id="dailyFat">0g</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-title">🍽️ Meals</div>
+                <div id="dailyMealsList" class="daily-meals-list">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🍽️</div>
+                        <div>No meals logged for this day</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">📊 Weekly Overview</div>
+                <div class="weekly-chart-wrapper">
+                    <canvas id="weeklyCaloriesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Settings Tab -->
     <div class="tab-content" id="settingsTab">
         <div class="container">
@@ -190,6 +280,10 @@
         <button class="nav-item active" onclick="switchTab('home')" data-tab="home">
             <span class="nav-icon">📦</span>
             <span class="nav-label">Add Food</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('history')" data-tab="history">
+            <span class="nav-icon">📅</span>
+            <span class="nav-label">History</span>
         </button>
         <button class="nav-item" onclick="switchTab('recipes')" data-tab="recipes">
             <span class="nav-icon">🍳</span>
@@ -256,6 +350,32 @@
             </div>
         </div>
     </div>
+
+    <div class="modal" id="saveToDailyLogModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>💾 Save to Daily Log</h2>
+                <button class="modal-close" onclick="closeSaveToDailyLogModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="saveLogDate">Select Date:</label>
+                    <input type="date" id="saveLogDate" class="date-input" style="width: 100%;" />
+                </div>
+                <div class="save-log-summary">
+                    <p>You are about to save <strong id="saveLogItemCount">0</strong> food item(s) to your daily log.</p>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-success" onclick="confirmSaveToDailyLog()">💾 Save</button>
+                <button class="btn" onclick="closeSaveToDailyLogModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file inputs for importing -->
+    <input type="file" id="historyJsonImport" accept=".json" style="display: none;" onchange="handleHistoryImport(event, 'json')">
+    <input type="file" id="historyCsvImport" accept=".csv" style="display: none;" onchange="handleHistoryImport(event, 'csv')">
 
     <script src="script.js"></script>
 </body>
